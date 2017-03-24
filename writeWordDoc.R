@@ -8,33 +8,38 @@ library(magrittr)
 # Param 3: Name of the Forest Division                                    #
 ###########################################################################
 
-createWordDocument <- function (ebdChecklist, docFileName, forestName) {
-  
-  # Create a Word document
-  doc <- docx()
+createWordDocument <- function (doc, inTitle)  {
   
   # Add a title
-  doc <- addTitle(doc, paste ('Checklist of Birds of ',forestName,' Division', sep='') , level=1)
+  doc <- addTitle(doc, inTitle , level=1)
   
   # Add paragraph
   doc <- addParagraph(doc, "This Word document is generated from eBird checklists using Bird Survey Report App.")
   
-  doc <- addTitle(doc, "Consolidated Checklist", level=2)
+  return (doc)
+}
+
+createTableinDoc <- function (doc, inTable, inTitle) {
+  
+  doc <- addTitle(doc, inTitle, level=2)
   
   # Convert to flex table and format it
-  ebd_species_flex <- FlexTable (ebdChecklist, 
+  inTable_flex <- FlexTable (inTable, 
                                  header.cell.props = cellProperties( background.color =  "#003366" ),
                                  header.text.props = textBold( color = "white" ))
-  setZebraStyle( ebd_species_flex, odd = "#DDDDDD", even = "#FFFFFF" ) 
-  ebd_species_flex[] <- textProperties( font.size=9)
-  ebd_species_flex[, 'Scientific Name'] <- textProperties(  font.size=9, font.style="italic")
+  setZebraStyle( inTable_flex, odd = "#DDDDDD", even = "#FFFFFF" ) 
+  inTable_flex[] <- textProperties( font.size=9)
+
+  if("Scientific Name" %in% colnames(inTable))
+  {  
+    inTable_flex[, 'Scientific Name'] <- textProperties(  font.size=9, font.style="italic")
+  }
   
   # Add FlexTable to the document
-  doc <- addFlexTable(doc, ebd_species_flex)
+  doc <- addFlexTable(doc, inTable_flex)
   doc <- addPageBreak(doc) # go to the next page
   
-  # Write the word document to a file
-  writeDoc(doc, file=docFileName)
+  return (doc)
 }
 
 # Test Code 
@@ -51,7 +56,10 @@ testHarness_createWordDocument <- function ()
   
   colnames(ebd_species)[2] <- "Scientific Name"
   
-  createWordDocument(ebd_species, 'ReportVazhachal.docx', 'Vazhachal')  
+  docx() %>%
+  createWordDocument('Birds of Vazhachal Forest Division')   %>%
+  createTableinDoc (ebd_species, 'Checklist of Birds of Vazhachal Forest Division') %>%
+  writeDoc ('ReportVazhachal.docx')
 }
 
 #testHarness_createWordDocument()

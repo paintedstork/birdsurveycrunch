@@ -2,11 +2,16 @@ library (plyr)
 library (dplyr)
 library (rgdal)
 library (sp)
+library (tools)
 
-processEBirdFiles <- function (inputEbdFile, species, forestmap, startDate, endDate) {
+processEBirdFiles <- function (inputEbdFile, species, forestmap, forestDivision, startDate, endDate) {
   #Unzip and read eBird records
-  unzip(inputEbdFile)
-  ebd     <- read.csv('MyEbirdData.csv', header = TRUE, sep = ",") 
+  print (inputEbdFile)
+  print (file_ext(inputEbdFile)[1])
+  if(tools::file_ext(inputEbdFile)[1] == 'zip') ebd <- read.csv(unz(inputEbdFile$datapath,'MyEBirdData.csv'))
+  if(tools::file_ext(inputEbdFile)[1] == 'csv') ebd <- read.csv(inputEbdFile$datapath)
+  
+  if (nrow(ebd) == 0)  { return (NULL) }
   
   # Remove records outside the date. 
   if(as.Date(startDate) < as.Date(endDate))
@@ -15,7 +20,7 @@ processEBirdFiles <- function (inputEbdFile, species, forestmap, startDate, endD
     ebd <- ebd [which(as.Date(ebd$Date,"%m-%d-%Y") <= as.Date(endDate)), ]
   }
   
-  if (nrow(ebd) == 0)  { return (ebd) }
+  if (nrow(ebd) == 0)  { return (NULL) }
   
   # Obtain details of birds by joining with species file
   ebd <- join (ebd, species, by = 'Scientific.Name')
@@ -55,6 +60,12 @@ processEBirdFiles <- function (inputEbdFile, species, forestmap, startDate, endD
     
     rangeindex  <- rangeindex + 1
   }
+
+  # Filter for records from the forest division selected
+  ebd_with_range_and_division <- ebd_with_range_and_division [which (ebd_with_range_and_division$DIVISION == forestDivision), ]
+  
+  if (nrow(ebd_with_range_and_division) == 0)  { return (NULL) }
+  
   
   print(paste ('No species ',nrow(ebd_with_range_and_division)))
   
@@ -70,8 +81,12 @@ species <- read.csv('Species.csv', header = TRUE, sep = ",")
 unzip('keralaforest.zip')
 forestmap <- rgdal::readOGR('keralaforest.shp', 'keralaforest')
 
-output <- processEBirdFiles('..\\data\\ebird_1489816770850.zip', species, forestmap, '2017-01-15', '2017-03-01')
+output <- processEBirdFiles('..\\data\\ebird_1489816770850.zip', species, forestmap, 'Vazhachal', '2017-01-15', '2017-03-01')
 write.csv(output, 'testout.csv')
+
+output <- processEBirdFiles('MyEBirdData.csv', species, forestmap, 'Vazhachal', '2017-01-15', '2017-03-01')
+write.csv(output, 'testout.csv')
+
 print (nrow(output))
 }
 
