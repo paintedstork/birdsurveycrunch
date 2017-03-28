@@ -35,17 +35,104 @@ ebd_all   <- ebd_all[ebd_all$Category != 'slash',]
 ebd_all   <- ebd_all[!duplicated(ebd_all[c("Genus.Name","Species.Name", "Submission.ID")]),]
 
 #Calculate the encounters per species per range
-ebd_density_per_range <- dcast(ebd_all, Taxonomic.Order + English.India + Scientific.Name + IUCN + WG ~ RANGE, value.var = "Submission.ID", fun.aggregate = length )
+ebd_density_per_range <- dcast(ebd_all, Taxonomic.Order + 
+                                        English.India + 
+                                        Scientific.Name + 
+                                        IUCN + 
+                                        WG +
+                                        Feeding.Guild +
+                                        Raptors + 
+                                        Primary.Hole.nesters +
+                                        Woodland.Understorey.Birds +
+                                        Parasitic.Cuckoos ~ RANGE, value.var = "Submission.ID", fun.aggregate = length )
 
 # Dividing the encounters by number of lists for each range.
 # Pick the generic columns out, only divide the columns with encounter and then cbind them back. 
 # Rounding to two decimal places
 # Note, the data frame is transposed for division and transposed back
-ebd_density_per_range <- cbind (ebd_density_per_range [1:5], 
-                  t( round (100 * t(ebd_density_per_range[6:ncol(ebd_density_per_range)]) / 
+ebd_density_per_range <- cbind (ebd_density_per_range [1:10], 
+                  t( round (100 * t(ebd_density_per_range[11:ncol(ebd_density_per_range)]) / 
                       t(ebd_complete_lists_per_range[2])[1:ncol(t(ebd_complete_lists_per_range))], 2)))
 
+# Name the columns properly
+colnames (ebd_density_per_range) <- c ("Taxonomic.Order", 
+                                      "English Name" , 
+                                      "Scientific Name", 
+                                      "IUCN", 
+                                      "WG", 
+                                      "Feeding Guild",
+                                      "Raptors",
+                                      "Primary Hole Nesters",
+                                      "Woodland Understorey Birds",
+                                      "Parasitic Cuckoos",
+                                      colnames(ebd_density_per_range)[11:ncol(ebd_density_per_range)]
+                                      )
+
+
 return (ebd_density_per_range)
+}
+
+generateOverallBirdDensity <- function(ebd) {
+  
+  print(nrow(ebd))
+  if (nrow(ebd) == 0)  { return (NULL) }
+  
+  # Get the complete lists and count the complete lists per range
+  ebd_lists           <- ebd[!duplicated(ebd[c("Submission.ID")]), ] 
+  ebd_complete_lists  <- ebd_lists[ebd_lists$All.Obs.Reported == 1,]
+
+  ebd_all <- ebd  
+  
+  #Remove data from incomplete lists
+  ebd_all  <- ebd_all[ebd_lists$All.Obs.Reported == 1,]
+  
+  #Remove spuhs
+  ebd_all   <- ebd_all[ebd_all$Category != 'spuh',]
+  
+  #Remove slashes
+  ebd_all   <- ebd_all[ebd_all$Category != 'slash',]
+  
+  #Remove subspecies/issf
+  ebd_all   <- ebd_all[!duplicated(ebd_all[c("Genus.Name","Species.Name", "Submission.ID")]),]
+  
+  #Calculate the encounters per species per range
+  ebd_density_division <- dcast(ebd_all, Taxonomic.Order + 
+                                         English.India + 
+                                         Scientific.Name + 
+                                         IUCN + 
+                                         WG +
+                                         Feeding.Guild +
+                                         Raptors + 
+                                         Primary.Hole.nesters +
+                                         Woodland.Understorey.Birds +
+                                         Parasitic.Cuckoos ~ ., value.var = "Submission.ID", fun.aggregate = length ) 
+
+  # Dividing the encounters by number of lists for each range.
+  # Pick the generic columns out, only divide the columns with encounter and then cbind them back. 
+  # Rounding to two decimal places
+  # Note, the data frame is transposed for division and transposed back
+  ebd_density_division <- cbind (ebd_density_division [1:10], 
+                                  t( round (100 * t(ebd_density_division[11]) / nrow(ebd_complete_lists), 2)))
+
+  ebd_density_division  <- ebd_density_division [ order (-ebd_density_division [11]),]
+  
+  # Add a Serial Number
+  ebd_density_division$SlNo <- seq.int(nrow(ebd_density_division))
+
+  colnames (ebd_density_division) <- c ("Taxonomic.Order", 
+                                        "English Name" , 
+                                        "Scientific Name", 
+                                        "IUCN", 
+                                        "WG", 
+                                        "Feeding Guild",
+                                        "Raptors",
+                                        "Primary Hole Nesters",
+                                        "Woodland Understorey Birds",
+                                        "Parasitic Cuckoos",
+                                        "Density", 
+                                        "SlNo")
+  
+  return (ebd_density_division )
 }
 
 
@@ -64,6 +151,10 @@ testHarness_generateBirdDensity <- function () {
   
   output <- generateBirdDensity(ebd) 
   write.csv(output, 'testout.csv')
+
+#  output <- generateOverallBirdDensity(ebd) 
+  write.csv(output, 'testout.csv')
+  
   print (nrow(output))
 }
 

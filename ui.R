@@ -1,4 +1,5 @@
 library(shiny)
+library(plotly)
 
 shinyUI <- fluidPage(
 
@@ -20,25 +21,35 @@ shinyUI <- fluidPage(
     
     # value is always yyyy-mm-dd, even if the display format is different
     # End date for the survey
-    dateInput("enddate", "End Date of Survey", value = "2017-03-15", format = "dd/mm/yy")
-    
+    dateInput("enddate", "End Date of Survey", value = "2017-03-15", format = "dd/mm/yy"), 
+
+    helpText(h4("Check this box if you would like to generate indicator species summary per range")),
+    checkboxInput("indicaterspeciesperrange", label = "Generete per Range", value = FALSE)
+  
   ),
+  
+  downloadButton('downloadData', 'Download Report'),
   
   mainPanel(
     tabsetPanel(
       tabPanel("Summary", tableOutput('summary')),
       tabPanel("Checklist", dataTableOutput('checklist')),
+      tabPanel("Density", dataTableOutput('density')),
       tabPanel("Common Species",
-               uiOutput("tables") ),      
+               uiOutput("tables_common_species") ),      
       tabPanel("Threatened Species", tableOutput('iucnspecies')),
       tabPanel("Endemic Species", tableOutput('endemicspecies')),
+      tabPanel("Diversity Analysis", plotOutput('shannon')),
+      tabPanel("Cluster Analysis", plotOutput('braycrutis')),
+      tabPanel("Guild Analysis", plotOutput('guildAnalysis')),
+      tabPanel("Indicator Species Species",
+               uiOutput("tables_indicator_species") ),      
       tabPanel("About", 
                br(), h1("About Bird Survey Report Generator"), 
                br(), p("Bird surveys are conducted in various forest areas with the help of bird-watchers."), 
                br(), p("Bird-watchers use eBird enter their observations as multiple lists."), 
                br(), p("This app helps in analysing the eBird data and create summaries for a bird survey report:")
       )
-    ),
-    downloadButton('downloadData', 'Download Report')
+    )
   )
 )

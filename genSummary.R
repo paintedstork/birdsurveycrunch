@@ -75,10 +75,45 @@ generateSummary <- function(ebd) {
   
   # Next two lines moves the row names as first column with a name for the column
   setDT(rangesummary, keep.rownames = TRUE)[]
-  colnames(rangesummary)[1] <- "Range=>"
+  colnames(rangesummary)[1] <- "Region===>"
   
   print (rangesummary)
   return (rangesummary)
+}
+
+generateOverallSummary <- function(ebd, division) {
+  
+  if (nrow(ebd) == 0)  { return (NULL) }
+  
+  # Get the lists and Count the number of lists per range
+  ebd_lists           <- ebd[!duplicated(ebd[c("Submission.ID")]), ]
+  
+  # Get the complete lists and count the complete lists per range
+  ebd_complete_lists          <- ebd_lists[ebd_lists$All.Obs.Reported == 1,]
+
+  #Create species list by removing duplicate species entries
+  ebd_species   <- ebd[!duplicated(ebd[c("Taxonomic.Order","RANGE")]), ] 
+  
+  #Remove spuhs
+  ebd_species   <- ebd_species[ebd_species$Category != 'spuh',]
+  
+  #Remove slashes
+  ebd_species   <- ebd_species[ebd_species$Category != 'slash',]
+  
+  #Remove subspecies/issf
+  ebd_species   <- ebd_species[!duplicated(ebd_species[c("Genus.Name","Species.Name")]),]
+  
+  
+  divisionsummary <- data.frame ( c(nrow(ebd_lists),
+                                    nrow (ebd_complete_lists),
+                                    sum (ebd_complete_lists[,"Duration..Min."]),
+                                    nrow(ebd_species),
+                                    nrow(ebd_species[ebd_species$IUCN != '',]),
+                                    nrow(ebd_species[ebd_species$WG == 'X',])))
+  
+  colnames(divisionsummary)  <- c(division)
+  
+  return (divisionsummary)
 }
 
 # Test Code 
@@ -92,7 +127,7 @@ testHarness_generateSummary <- function () {
   ebd$RANGE <- 'Vazhachal'
   ebd$RANGE [100:500] <- 'Sholayar'
   
-  output <- generateSummary(ebd)
+  output <- cbind (generateSummary(ebd), generateOverallSummary(ebd, paste('Vazhachal ','Division')))
   write.csv(output, 'testout.csv')
   print (nrow(output))
 }

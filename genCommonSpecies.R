@@ -3,14 +3,14 @@ library (dplyr)
 library(reshape2)
 source ("genBirdDensity.R")
 
-generateCommonSpecies <- function(ebd_density) {
+generateCommonSpecies <- function(ebd_density, numeral_col=11) {
   
   if (nrow(ebd_density) == 0)  { return (NULL) }
   
   
   # Pick English name and the range values  
-  # First five columns are metadata and not values. This hard-coding is dangereous and need to be removed
-  ebd_density <- subset(ebd_density, select = c ("English.India", colnames (ebd_density)[6:ncol(ebd_density)]))
+  # First numeral_col columns are metadata and not values.
+  ebd_density <- subset(ebd_density, select = c ("English Name", colnames (ebd_density)[numeral_col:ncol(ebd_density)]))
 
   ebd_density_over_ranges <- NULL
   ebd_range_list <- NULL
@@ -41,7 +41,7 @@ testHarness_generateCommonSpecies <- function () {
   ebd$RANGE <- 'Vazhachal'
   ebd$RANGE [100:500] <- 'Sholayar'
   
-  output <- generateBirdDensity(ebd) %>% generateCommonSpecies()
+  output <- generateBirdDensity(ebd) %>% generateCommonSpecies(11)
   write.csv(output$Sholayar, 'testout.csv')
   write.csv(output$Vazhachal, 'testout.csv')
 }

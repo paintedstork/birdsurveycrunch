@@ -21,6 +21,7 @@ createWordDocument <- function (doc, inTitle)  {
 
 createTableinDoc <- function (doc, inTable, inTitle) {
   
+  print(nrow(inTable))
   doc <- addTitle(doc, inTitle, level=2)
   
   # Convert to flex table and format it
@@ -37,6 +38,53 @@ createTableinDoc <- function (doc, inTable, inTitle) {
   
   # Add FlexTable to the document
   doc <- addFlexTable(doc, inTable_flex)
+  doc <- addPageBreak(doc) # go to the next page
+  
+  return (doc)
+}
+
+createBarPlotinDoc <- function (doc, inTable, inTitle) {
+  
+  doc <- addTitle(doc, inTitle, level=2)
+
+  doc = addPlot( doc, 
+                fun = function() { barplot( t(inTable), width = 1, xlim= c(1,4 * nrow(inTable)), ylim = c(0,ceiling(max(inTable))), space = 2, border = par("fg"), main=inTitle, 
+                                            xlab="Ranges", col=c("darkblue","red")) %>%
+                                   text(t(inTable), labels = t(inTable), pos = 3)},
+               vector.graphic = TRUE, width = 4, height = 5,
+               par.properties = parProperties(text.align = "center")
+)
+doc <- addPageBreak(doc) # go to the next page
+
+return (doc)
+}
+
+createStackedBarPlotinDoc <- function (doc, inTable, inTitle) {
+  
+  doc <- addTitle(doc, inTitle, level=2)
+
+  p <- ggplot(inTable, aes(x = Range, y = Percentage,fill = Guild)) + 
+       geom_bar(stat='identity', size = 10, show.legend = TRUE)
+  
+  doc = addPlot( doc, 
+                 fun = print, x= p,
+                 vector.graphic = TRUE, width = 4, height = 5,
+                 par.properties = parProperties(text.align = "center")
+  )
+  doc <- addPageBreak(doc) # go to the next page
+  
+  return (doc)
+}
+
+createPlotinDoc <- function (doc, inTable, inTitle) {
+  
+  doc <- addTitle(doc, inTitle, level=2)
+  
+  doc = addPlot( doc, 
+                 fun = function() { plot(inTable, horiz = T,  main="Cluster Analysis", xlim=c(1.0, 0.0), xlab="Dissimilarity", ylab = "Ranges") },
+                 vector.graphic = TRUE, width = 4, height = 5,
+                 par.properties = parProperties(text.align = "center") 
+  )
   doc <- addPageBreak(doc) # go to the next page
   
   return (doc)
