@@ -14,6 +14,8 @@ source("genGroupSummaries.R")
 source("genDiversity.R")
 source("genGuildAnalysis.R")
 
+options(shiny.maxRequestSize=30*1024^2) 
+
 shinyServer <- function(input, output) {
 
   # An output with renderTable. There are more formatting options which are not tried

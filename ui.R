@@ -17,7 +17,7 @@ shinyUI <- fluidPage(
     # value is always yyyy-mm-dd, even if the display format is different
     # Start date for the survey
     helpText(h4("Select the start and end dates of the survey")),
-    dateInput("startdate", "Start Date of Survey", value = "2017-01-15", format = "dd/mm/yy"),
+    dateInput("startdate", "Start Date of Survey", value = "2015-07-15", format = "dd/mm/yy"),
     
     # value is always yyyy-mm-dd, even if the display format is different
     # End date for the survey
