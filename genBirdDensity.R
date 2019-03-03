@@ -8,6 +8,7 @@ library(reshape2)
 # Param 1: ebd data                                             #
 #################################################################
 
+# Testing saving in GitHub
   
 generateBirdDensity <- function(ebd) {
 
