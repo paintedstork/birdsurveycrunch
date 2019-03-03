@@ -1,4 +1,5 @@
-library(ReporteRs)
+library(officer)
+library(flextable)
 library(magrittr)
 
 ###########################################################################
@@ -11,10 +12,10 @@ library(magrittr)
 createWordDocument <- function (doc, inTitle)  {
   
   # Add a title
-  doc <- addTitle(doc, inTitle , level=1)
+  doc <- body_add_par(doc, inTitle, style = "heading 1")
   
   # Add paragraph
-  doc <- addParagraph(doc, "This Word document is generated from eBird checklists using Bird Survey Report App.")
+  doc <- body_add_par(doc, "This Word document is generated from eBird checklists using Bird Survey Report App.", style = "Normal")
   
   return (doc)
 }
@@ -22,70 +23,103 @@ createWordDocument <- function (doc, inTitle)  {
 createTableinDoc <- function (doc, inTable, inTitle) {
   
   print(nrow(inTable))
-  doc <- addTitle(doc, inTitle, level=2)
-  
-  # Convert to flex table and format it
-  inTable_flex <- FlexTable (inTable, 
-                                 header.cell.props = cellProperties( background.color =  "#003366" ),
-                                 header.text.props = textBold( color = "white" ))
-  setZebraStyle( inTable_flex, odd = "#DDDDDD", even = "#FFFFFF" ) 
-  inTable_flex[] <- textProperties( font.size=9)
+  doc <- body_add_par(doc, inTitle, style = "heading 2")
+ 
+  inTable_flex <- regulartable (inTable,
+                             col_keys = names(inTable)) %>% 
+                  autofit() %>%
+                  theme_zebra(odd_body = "#DDDDDD", 
+                              even_body = "#FFFFFF") %>%
+                  bold(bold = TRUE, part = "header") %>%
+                  color (color = "white", part = "header") %>%
+                  bg (bg = "#003366", part = "header") %>%
+                  fontsize (size = 9) 
+# %>%
+# ???                 align (align = "left", part = "all") 
 
   if("Scientific Name" %in% colnames(inTable))
   {  
-    inTable_flex[, 'Scientific Name'] <- textProperties(  font.size=9, font.style="italic")
+    italic (inTable_flex, j = "Scientific Name", italic = TRUE, part = "body") 
   }
-  
   # Add FlexTable to the document
-  doc <- addFlexTable(doc, inTable_flex)
-  doc <- addPageBreak(doc) # go to the next page
+  doc <- body_add_flextable(doc, inTable_flex)
+  doc <- body_add_break(doc) # go to the next page
   
   return (doc)
 }
 
 createBarPlotinDoc <- function (doc, inTable, inTitle) {
   
-  doc <- addTitle(doc, inTitle, level=2)
+  doc <- body_add_par(doc, inTitle, style = "heading 2")
+  
+#  doc = addPlot( doc, 
+#                fun = function() { barplot( t(inTable), width = 1, xlim= c(1,4 * nrow(inTable)), ylim = c(0,ceiling(max(inTable))), space = 2, border = par("fg"), main=inTitle, 
+#                                            xlab="Ranges", col=c("darkblue","red")) %>%
+#                                   text(t(inTable), labels = t(inTable), pos = 3)},
+#               vector.graphic = TRUE, width = 4, height = 5,
+#               par.properties = parProperties(text.align = "center")
+#)
+  p <- barplot( t(inTable), 
+                width = 1, 
+                xlim= c(1,4 * nrow(inTable)), ylim = c(0,ceiling(max(inTable))), 
+                space = 2, 
+                border = par("fg"), 
+                main=inTitle, 
+                xlab="Ranges", 
+                col=c("darkblue","red")) %>%
+                text(t(inTable), 
+                labels = t(inTable), 
+                pos = 3)
 
-  doc = addPlot( doc, 
-                fun = function() { barplot( t(inTable), width = 1, xlim= c(1,4 * nrow(inTable)), ylim = c(0,ceiling(max(inTable))), space = 2, border = par("fg"), main=inTitle, 
-                                            xlab="Ranges", col=c("darkblue","red")) %>%
-                                   text(t(inTable), labels = t(inTable), pos = 3)},
-               vector.graphic = TRUE, width = 4, height = 5,
-               par.properties = parProperties(text.align = "center")
-)
-doc <- addPageBreak(doc) # go to the next page
-
+    doc <- body_add_gg (doc, 
+                      value = p, 
+                      width = 4, height =5, 
+                      style = "centered")
+  
+  doc <- body_add_break(doc) # go to the next page
+  
 return (doc)
 }
 
 createStackedBarPlotinDoc <- function (doc, inTable, inTitle) {
   
-  doc <- addTitle(doc, inTitle, level=2)
-
-  p <- ggplot(inTable, aes(x = Range, y = Percentage,fill = Guild)) + 
-       geom_bar(stat='identity', size = 10, show.legend = TRUE)
+  doc <- body_add_par(doc, inTitle, style = "heading 2")
   
-  doc = addPlot( doc, 
-                 fun = print, x= p,
-                 vector.graphic = TRUE, width = 4, height = 5,
-                 par.properties = parProperties(text.align = "center")
-  )
-  doc <- addPageBreak(doc) # go to the next page
+  p <- ggplot(inTable, aes(x = Range, y = Percentage,fill = Guild)) + 
+       geom_bar(stat='identity', size = 10, show.legend = TRUE) +
+       theme(axis.text.x = element_text(angle = -90))
+  
+  doc <- body_add_gg (doc, 
+                      value = p, 
+                      width = 4, height =5, 
+                      style = "centered")
+#  doc = addPlot( doc, 
+#                 fun = print, x= p,
+#                 vector.graphic = TRUE, width = 4, height = 5,
+#                 par.properties = parProperties(text.align = "center")
+#  )
+  doc <- body_add_break(doc) # go to the next page
   
   return (doc)
 }
 
 createPlotinDoc <- function (doc, inTable, inTitle) {
   
-  doc <- addTitle(doc, inTitle, level=2)
+  doc <- body_add_par(doc, inTitle, style = "heading 2")
   
-  doc = addPlot( doc, 
-                 fun = function() { plot(inTable, horiz = T,  main="Cluster Analysis", xlim=c(1.0, 0.0), xlab="Dissimilarity", ylab = "Ranges") },
-                 vector.graphic = TRUE, width = 4, height = 5,
-                 par.properties = parProperties(text.align = "center") 
-  )
-  doc <- addPageBreak(doc) # go to the next page
+  p <- plot(inTable, 
+            horiz = T,  
+            main="Cluster Analysis", 
+            xlim=c(1.0, 0.0), 
+            xlab="Dissimilarity", 
+            ylab = "Ranges")
+  
+  doc <- body_add_gg (doc, 
+                      value = p, 
+                      width = 4, height =5, 
+                      style = "centered")
+  
+  doc <- body_add_break(doc) # go to the next page
   
   return (doc)
 }
@@ -94,8 +128,8 @@ createPlotinDoc <- function (doc, inTable, inTitle) {
 
 testHarness_createWordDocument <- function ()
 {
-  unzip('..\\data\\ebird_1489816770850.zip')
-  ebd     <- read.csv('MyEbirdData.csv', header = TRUE, sep = ",") 
+  unzip('..\\data\\ebird_1510638067328.zip')
+  ebd     <- read.csv('MyEBirdData.csv', header = TRUE, sep = ",") 
 
   ebd_species   <- ebd[!duplicated(ebd$Taxonomic.Order),]
 
@@ -104,10 +138,11 @@ testHarness_createWordDocument <- function ()
   
   colnames(ebd_species)[2] <- "Scientific Name"
   
-  docx() %>%
-  createWordDocument('Birds of Vazhachal Forest Division')   %>%
+  read_docx() %>%
+  createWordDocument("Birds of Vazhachal Forest Division")   %>%
   createTableinDoc (ebd_species, 'Checklist of Birds of Vazhachal Forest Division') %>%
-  writeDoc ('ReportVazhachal.docx')
+  print(target = "ReportVazhachal.docx" )
+
 }
 
 #testHarness_createWordDocument()

@@ -33,7 +33,7 @@ generateCommonSpecies <- function(ebd_density, numeral_col=11) {
 # Test Code 
 testHarness_generateCommonSpecies <- function () {
   unzip('..\\data\\ebird_1489816770850.zip')
-  ebd     <- read.csv('MyEbirdData.csv', header = TRUE, sep = ",") 
+  ebd     <- read.csv('MyEBirdData.csv', header = TRUE, sep = ",") 
   species <- read.csv('Species.csv', header = TRUE, sep = ",") 
   
   # Obtain details of birds by joining with species file

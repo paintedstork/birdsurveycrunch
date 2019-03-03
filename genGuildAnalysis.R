@@ -14,9 +14,16 @@ genGuildAnalysis <- function (ebd)
   
   # Calculate guild encounters
   guild <- dcast (ebd, Feeding.Guild ~ RANGE, value.var = "Submission.ID", fun.aggregate = length)
-  
+
   # Calculate guild values in percentages
-  guild <- cbind (guild [1], t (round (100 * t (guild [2:ncol(guild)]) / colSums (guild [,-1]),2)))
+  if (ncol(guild) > 2 )
+  {
+    guild <- cbind (guild [1], t (round (100 * t (guild [2:ncol(guild)]) / colSums (guild [,-1]),2)))
+  }
+  else
+  { # Strangely colSums does not work on guild[,-1]
+    guild <- cbind (guild [1], t (round (100 * t (guild [2:ncol(guild)]) / colSums (guild [2]),2)))
+  }
 
   # Show only dominant guilds - all the rest (<5% of birds) can be shown as others.   
   guild[2:ncol(guild)] [guild[2:ncol(guild)] < 5] <- 0
@@ -47,7 +54,7 @@ genGuildAnalysis <- function (ebd)
 # Test Code 
 testHarness_genGuildAnalysis <- function () {
   unzip('..\\data\\ebird_1489816770850.zip')
-  ebd     <- read.csv('MyEbirdData.csv', header = TRUE, sep = ",") 
+  ebd     <- read.csv('MyEBirdData.csv', header = TRUE, sep = ",") 
   species <- read.csv('Species.csv', header = TRUE, sep = ",") 
   
   # Obtain details of birds by joining with species file

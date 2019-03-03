@@ -1,10 +1,10 @@
-
 library(vegan)
-data(varespec)
-vare.dist <- vegdist(varespec)
+
+#data(varespec)
+#vare.dist <- vegdist(varespec)
 # Orlóci's Chord distance: range 0 .. sqrt(2)
-vare.dist <- vegdist(decostand(varespec, "norm"), "euclidean")
-clust.res<-hclust(vare.dist,method="average")
+#vare.dist <- vegdist(decostand(varespec, "norm"), "euclidean")
+#clust.res<-hclust(vare.dist,method="average")
 
 genSpecAccumPerRange  <- function (ebd_diversity)
 {
@@ -75,8 +75,8 @@ genSpecAccumPerRange  <- function (ebd_diversity)
   }
 }
 
-library(vegan)
-data(BCI) 
-df <- lapply(c(1,21,41,61,81),function(i)specaccum(BCI[,seq(i,i+19)], method="random"))
-plot(df[[1]])
-for (i in 2:5) plot(df[[i]],add=T, col=i)
+#library(vegan)
+#data(BCI) 
+#df <- lapply(c(1,21,41,61,81),function(i)specaccum(BCI[,seq(i,i+19)], method="random"))
+#plot(df[[1]])
+#for (i in 2:5) plot(df[[i]],add=T, col=i)

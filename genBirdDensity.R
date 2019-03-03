@@ -8,7 +8,6 @@ library(reshape2)
 # Param 1: ebd data                                             #
 #################################################################
 
-# Testing saving in GitHub
   
 generateBirdDensity <- function(ebd) {
 
@@ -17,7 +16,9 @@ if (nrow(ebd) == 0)  { return (NULL) }
   
 # Get the complete lists and count the complete lists per range
 ebd_lists           <- ebd[!duplicated(ebd[c("Submission.ID")]), ] 
+
 ebd_complete_lists  <- ebd_lists[ebd_lists$All.Obs.Reported == 1,]
+
 ebd_complete_lists_per_range<- dcast(ebd_complete_lists, RANGE ~ ., value.var = "Submission.ID", fun.aggregate = length )
 colnames (ebd_complete_lists_per_range) <- c ("Range", "No of Complete Lists")
 
@@ -139,9 +140,9 @@ generateOverallBirdDensity <- function(ebd) {
 
 # Test Code 
 testHarness_generateBirdDensity <- function () {
-  unzip('..\\data\\ebird_1489816770850.zip')
-  ebd     <- read.csv('MyEbirdData.csv', header = TRUE, sep = ",") 
-  species <- read.csv('Species.csv', header = TRUE, sep = ",") 
+#  unzip('..\\data\\ebird_1489816770850.zip')
+  ebd     <- read.csv('MyEBirdData.csv', header = TRUE, sep = ",")
+  species <- read.csv('Speciesv2.csv', header = TRUE, sep = ",") 
   
   # Obtain details of birds by joining with species file
   ebd <- join (ebd, species, by = 'Scientific.Name')

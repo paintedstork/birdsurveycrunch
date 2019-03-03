@@ -3,6 +3,25 @@ library (dplyr)
 library (rgdal)
 library (sp)
 library (tools)
+library (sqldf)
+
+':=' <- function(lhs, rhs) {
+  frame <- parent.frame()
+  lhs <- as.list(substitute(lhs))
+  if (length(lhs) > 1)
+    lhs <- lhs[-1]
+  if (length(lhs) == 1) {
+    do.call(`=`, list(lhs[[1]], rhs), envir=frame)
+    return(invisible(NULL)) 
+  }
+  if (is.function(rhs) || is(rhs, 'formula'))
+    rhs <- list(rhs)
+  if (length(lhs) > length(rhs))
+    rhs <- c(rhs, rep(list(NULL), length(lhs) - length(rhs)))
+  for (i in 1:length(lhs))
+    do.call(`=`, list(lhs[[i]], rhs[[i]]), envir=frame)
+  return(invisible(NULL)) 
+}
 
 MapColumns <- function (ebd)
 {
@@ -33,29 +52,32 @@ readEBirdFiles <- function (inputEbdFile, startDate, endDate) {
   
   print(inputEbdFile$name)
 
-  if( tools::file_ext(inputEbdFile)[1] == 'csv') ebd <- read.csv(inputEbdFile$datapath)
+  if( tools::file_ext(inputEbdFile$name) == 'csv') ebd <- read.csv(inputEbdFile$datapath)
   
-  if( tools::file_ext(inputEbdFile)[1] == 'zip') {
+  if( tools::file_ext(inputEbdFile$name) == 'zip') {
     if ( any ('MyEBirdData.csv'== unzip(inputEbdFile$datapath, list=TRUE)$Name))
     {
       ebd <- read.csv(unz(inputEbdFile$datapath,'MyEBirdData.csv'))
+      print(nrow(ebd))
       
       #Filter on date selected. Format is different between the two downloads
       if(as.Date(startDate) < as.Date(endDate))
       {
         ebd <- ebd [which(as.Date(ebd$Date,"%m-%d-%Y") >= as.Date(startDate)), ]
         ebd <- ebd [which(as.Date(ebd$Date,"%m-%d-%Y") <= as.Date(endDate)), ]
+        print(nrow(ebd))
       }
+      print(nrow(ebd))
     }
     else
     {
-      
       ebd <- read.delim(unz(inputEbdFile$datapath,gsub('zip','txt',inputEbdFile$name)), na.strings = c("NA", "", "null"), as.is=TRUE, quote="")
 
       #Add unique list identifier for removing duplicates
       ebd <- within (ebd, UNIQUE_SAMPLING_ID <-  ifelse(is.na(GROUP.IDENTIFIER),SAMPLING.EVENT.IDENTIFIER,GROUP.IDENTIFIER))
       #Remove entries from shared lists
       ebd <- ebd[!duplicated(ebd[c("UNIQUE_SAMPLING_ID","COMMON.NAME")]),]
+
       
       #Map Column names to same as personal eBird data columns
       ebd <- MapColumns (ebd)  
@@ -78,26 +100,36 @@ readEBirdFiles <- function (inputEbdFile, startDate, endDate) {
                                                 "Latitude",
                                                 "Longitude",
                                                 "Submission.ID",
+                                                "Date",
                                                 "Duration..Min.",
                                                 "All.Obs.Reported" ))
   
+  ebd_lists <- ebd[!duplicated(ebd[c("Submission.ID")]), ]
   
-  return (ebd)
+  return (list (ebd, ebd_lists))
 }
 
-processEBirdFiles <- function (inputEbdFile, species, forestmap, forestDivision, startDate, endDate) {
+processEBirdFiles <- function (inputEbdFile, species, forestmap, forestDivision, startDate, endDate, pickalllists) {
   #Unzip and read eBird records
   print (inputEbdFile$datapath)
   print (file_ext(inputEbdFile)[1])
 
-  ebd <- readEBirdFiles (inputEbdFile, startDate, endDate)
-  print(nrow(ebd))  
+  c (ebd, ebd_lists) := readEBirdFiles (inputEbdFile, startDate, endDate)
+  print(nrow(ebd))
+  print(nrow(ebd_lists))
 
   if (nrow(ebd) == 0)  { return (NULL) }
 
-  # Obtain details of birds by joining with species file
-  ebd <- join (ebd, species, by = 'Scientific.Name')
+  missing_species <- sqldf("SELECT [Scientific.Name] FROM ebd except SELECT [Scientific.Name] FROM species")
   
+  if(nrow(missing_species) > 0)
+  {
+    print(missing_species)
+  }
+  
+  # Obtain details of birds by joining with species file
+  ebd <- join (ebd, species, type = 'inner', by = 'Scientific.Name')
+
   sp::coordinates(ebd) <- ~Longitude+Latitude
   # Map the CRS
   sp::proj4string(ebd) <- sp::proj4string(forestmap)
@@ -114,12 +146,16 @@ processEBirdFiles <- function (inputEbdFile, species, forestmap, forestDivision,
     rgl_ebd$RANGE  <- 0;
     rgl_ebd$DIVISION  <- 0;
     rgl_ebd   <- rgl_ebd[range_selected, ]
-    
+
+
     if(nrow(rgl_ebd) > 0)
     {
       # For all filtered lists, assign the filter_index
-      rgl_ebd$RANGE     <- as.character(forestmap$Range[rangeindex]);
-      rgl_ebd$DIVISION  <- as.character(forestmap$Division[rangeindex]);
+      rgl_ebd_lists <- as.data.frame (rgl_ebd[!duplicated(as.data.frame (rgl_ebd[c("Submission.ID")])), ])
+      print (paste ("Lists", nrow(rgl_ebd_lists) , as.character(forestmap$Range[rangeindex])))
+      
+      rgl_ebd$RANGE     <- as.character(forestmap$Range[rangeindex])
+      rgl_ebd$DIVISION  <- as.character(forestmap$Division[rangeindex])
       
       if(!is.null(ebd_with_range_and_division))
       {
@@ -134,34 +170,74 @@ processEBirdFiles <- function (inputEbdFile, species, forestmap, forestDivision,
     rangeindex  <- rangeindex + 1
   }
 
-  # Filter for records from the forest division selected
-  ebd_with_range_and_division <- ebd_with_range_and_division [which (ebd_with_range_and_division$DIVISION == forestDivision), ]
-  
+  ebd_with_range_and_division <- as.data.frame (ebd_with_range_and_division [which (ebd_with_range_and_division$DIVISION == forestDivision), ])
+  ebd <- as.data.frame (ebd)
+
+  print("Processing")  
+  if(pickalllists)
+  {# Remaining lists should be processed with this condition 
+     ebd_selected <- ebd_with_range_and_division
+     ebd_selected$DIVISION <- NULL
+     ebd_selected$RANGE <- NULL
+     
+     ebd_selected <- sqldf ("SELECT * FROM ebd EXCEPT SELECT * FROM ebd_selected")
+     
+     print(nrow(ebd_selected))
+     # If there are any lists from Outskirts, then add them
+     if(nrow (ebd_selected))
+     {
+        ebd_selected$RANGE <- "Outskirts"
+        ebd_selected$DIVISION <- forestDivision
+     
+        ebd_with_range_and_division <- rbind (ebd_with_range_and_division, ebd_selected)
+        ebd_with_range_and_division <- ebd_with_range_and_division [which (ebd_with_range_and_division$DIVISION == forestDivision), ]
+     }
+  }
+  else 
+  {
+    ebd_selected_lists <- ebd_with_range_and_division[!duplicated(ebd_with_range_and_division[c("Submission.ID")]), ]
+    ebd_selected_lists <- ebd_selected_lists[,c("Submission.ID", "Common.Name")]
+    print(nrow(ebd_selected_lists))
+    
+    ebd_lists <- ebd_lists [,c("Submission.ID", "Common.Name")]
+    print(nrow(ebd_lists))
+    
+    ebd_excluded_lists <- sqldf ("SELECT * FROM ebd_lists EXCEPT SELECT * FROM ebd_selected_lists")
+    print(ebd_excluded_lists[,"Submission.ID"])  
+#    write.csv(ebd_excluded_lists, "excluded.csv")
+  }
+
   if (nrow(ebd_with_range_and_division) == 0)  { return (NULL) }
   
   
-  print(paste ('No species ',nrow(ebd_with_range_and_division)))
-  
-  return (as.data.frame(ebd_with_range_and_division)) 
+  print(paste ('No records ',nrow(ebd_with_range_and_division)))
+ 
+  print(tail(ebd_with_range_and_division,1))
+  write.csv(ebd_with_range_and_division, "output.csv")  
+  return (ebd_with_range_and_division) 
 }
 
 # Test Code 
 
 testHarness_processEBirdFiles <- function () {
 
-unzip('..\\data\\ebd_IN-KL-TS_relFeb-2017.zip')
-ebd <- read.delim(paste('ebd_IN-KL-TS_relFeb-2017','.txt',sep=''), na.strings = c("NA", "", "null"), as.is=TRUE, quote="")
-  
+inputEbdFile <- NULL
+inputEbdFile$datapath <- '..\\data\\ebd_IN-KL-TS_relFeb-2017.zip'
+inputEbdFile$name <- 'ebd_IN-KL-TS_relFeb-2017.zip'
+
+
 species <- read.csv('Species.csv', header = TRUE, sep = ",") 
 
 unzip('keralaforest.zip')
 forestmap <- rgdal::readOGR('keralaforest.shp', 'keralaforest')
+forestDivision <- 'Vazhachal'
+startDate <- '2015-01-15'
+endDate <- '2017-03-01'
 
-output <- processEBirdFiles('..\\data\\ebird_1489816770850.zip', species, forestmap, 'Vazhachal', '2017-01-15', '2017-03-01')
-write.csv(output, 'testout.csv')
+output <- processEBirdFiles(inputEbdFile, species, forestmap, forestDivision, startDate, endDate)
 
 output <- processEBirdFiles('MyEBirdData.csv', species, forestmap, 'Vazhachal', '2017-01-15', '2017-03-01')
-write.csv(output, 'testout.csv')
+#write.csv(output, 'testout.csv')
 
 print (nrow(output))
 }

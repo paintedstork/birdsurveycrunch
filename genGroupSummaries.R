@@ -32,19 +32,23 @@ generateIndicatorSpecies <- function (ebd, range_level_summary=FALSE) {
   
   l_ebd_Indicator_Species <- generateGroupSummaries(ebd_density, "Raptors")
   l_ebd_Indicator_Species$Indicator <- "Raptors"
-  ebd_Indicator_Species <- rbind (ebd_Indicator_Species, l_ebd_Indicator_Species)
+  if(nrow(l_ebd_Indicator_Species) > 0)
+    ebd_Indicator_Species <- rbind (ebd_Indicator_Species, l_ebd_Indicator_Species)
   
   l_ebd_Indicator_Species <- generateGroupSummaries(ebd_density, "Primary Hole Nesters")
   l_ebd_Indicator_Species$Indicator <- "Primary Hole Nesters"
-  ebd_Indicator_Species <- rbind (ebd_Indicator_Species, l_ebd_Indicator_Species)
+  if(nrow(l_ebd_Indicator_Species) > 0)
+    ebd_Indicator_Species <- rbind (ebd_Indicator_Species, l_ebd_Indicator_Species)
   
   l_ebd_Indicator_Species <- generateGroupSummaries(ebd_density, "Woodland Understorey Birds")
   l_ebd_Indicator_Species$Indicator <- "Woodland Understorey Birds"
-  ebd_Indicator_Species <- rbind (ebd_Indicator_Species, l_ebd_Indicator_Species)
+  if(nrow(l_ebd_Indicator_Species) > 0)
+    ebd_Indicator_Species <- rbind (ebd_Indicator_Species, l_ebd_Indicator_Species)
   
   l_ebd_Indicator_Species <- generateGroupSummaries(ebd_density, "Parasitic Cuckoos")
   l_ebd_Indicator_Species$Indicator <- "Parasitic Cuckoos"
   ebd_Indicator_Species <- rbind (ebd_Indicator_Species, l_ebd_Indicator_Species)
+  
   # Split dataframes per range
   chartdatasplit <- split(ebd_Indicator_Species[1:ncol(ebd_Indicator_Species)-1], ebd_Indicator_Species$Indicator, drop=FALSE)
   
@@ -54,7 +58,7 @@ generateIndicatorSpecies <- function (ebd, range_level_summary=FALSE) {
 # Test Code 
 testHarness_generateEndemicDensity <- function () {
   unzip('..\\data\\ebird_1489816770850.zip')
-  ebd     <- read.csv('MyEbirdData.csv', header = TRUE, sep = ",") 
+  ebd     <- read.csv('MyEBirdData.csv', header = TRUE, sep = ",") 
   species <- read.csv('Species.csv', header = TRUE, sep = ",") 
   
   # Obtain details of birds by joining with species file

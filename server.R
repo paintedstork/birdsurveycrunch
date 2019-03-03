@@ -3,6 +3,7 @@ library(xtable)
 library(plotly)
 library(ggplot2)
 
+source("global.R")
 source("processEbd.R")
 source("genSpeciesList.R")
 source("genSummary.R")
@@ -13,37 +14,50 @@ source("genThreatenedSpecies.R")
 source("genGroupSummaries.R")
 source("genDiversity.R")
 source("genGuildAnalysis.R")
+source("surveymapfunctions.R")
+source("genMaps.R")
 
 options(shiny.maxRequestSize=30*1024^2) 
 
-shinyServer <- function(input, output) {
+shinyServer <- function(session, input, output) {
 
+  ebd_proc <- reactive ({
+    req(input$zipfile)
+    processEBirdFiles(input$zipfile, species, forestmap, input$forestDivision, input$startdate, input$enddate, input$pickalllists)
+  })
+  
+  birdlist <- reactive({
+      ebd_proc()  %>%
+      generateOverallBirdDensity () %>% 
+      setorder (-Density) %>%
+      inner_join (species, by = c('Scientific Name' = 'Scientific.Name')) 
+      })
+  
+  observe(
+    {
+    updateSelectInput(session, 
+                      input = "speciesname",  
+                      choices = birdlist()$English.India)
+    }
+    )
+  
   # An output with renderTable. There are more formatting options which are not tried
   output$summary <-   renderTable ( {
-    
-    if(is.null(input$zipfile)) return(NULL)
-    
     print (input$zipfile$datapath)
-    ebd <- processEBirdFiles(input$zipfile, species, forestmap, input$forestDivision, input$startdate, input$enddate)
+    ebd <- ebd_proc()
     cbind (generateSummary(ebd), generateOverallSummary(ebd, paste(input$forestDivision,' Division')))                            
   })
   
 # Trying out render Table table - looks neat and formatted
   output$checklist <-   renderDataTable ( {
-    
-      if(is.null(input$zipfile)) return(NULL)
-      
-      processEBirdFiles(input$zipfile, species, forestmap, input$forestDivision, input$startdate, input$enddate) %>% 
+      ebd_proc() %>% 
       generateSpeciesList ()
       }, 
       options = list( lengthMenu = list(c(20, 50, 100, 300, 500, -1), c('20', '50', '100', '300', '500', 'All')),
       pageLength = 100))
 
   output$density <-   renderDataTable ( {
-    
-    if(is.null(input$zipfile)) return(NULL)
-    
-    processEBirdFiles(input$zipfile, species, forestmap, input$forestDivision, input$startdate, input$enddate) %>% 
+      ebd_proc() %>% 
       generateOverallBirdDensity () %>%
       subset(select = c("SlNo", "English Name","Scientific Name", "IUCN", "WG", "Density"))
   }, 
@@ -52,28 +66,19 @@ shinyServer <- function(input, output) {
   
   
   output$iucnspecies <-   renderTable ( {
-    
-    if(is.null(input$zipfile)) return(NULL)
-    
-    processEBirdFiles(input$zipfile, species, forestmap, input$forestDivision, input$startdate, input$enddate) %>% 
+      ebd_proc() %>% 
       generateBirdDensity() %>% 
       generateThreatenedDensity()
   })
 
   output$endemicspecies <-   renderTable ( {
-    
-    if(is.null(input$zipfile)) return(NULL)
-    
-    processEBirdFiles(input$zipfile, species, forestmap, input$forestDivision, input$startdate, input$enddate) %>% 
+      ebd_proc() %>% 
       generateBirdDensity() %>% 
       generateGroupSummaries ("WG")
   })
 
   output$shannon <-   renderPlot ( {
-    
-    if(is.null(input$zipfile)) return(NULL)
-
-    inTable <-  processEBirdFiles(input$zipfile, species, forestmap, input$forestDivision, input$startdate, input$enddate) %>% 
+    inTable <-  ebd_proc() %>% 
                 genCommunityData() %>% 
                 genShannonDiversity ()
     
@@ -83,37 +88,43 @@ shinyServer <- function(input, output) {
   }, width = 1000, height = 800)
 
   output$braycrutis <-   renderPlot ( {
-    
-    if(is.null(input$zipfile)) return(NULL)
-    
-    processEBirdFiles(input$zipfile, species, forestmap, input$forestDivision, input$startdate, input$enddate) %>% 
+    ebd_proc() %>% 
     genCommunityData() %>% 
     genClusterAnalaysis() %>%
     plot(horiz = T,  main="Cluster Analysis", xlim=c(1.0, 0.0), xlab="Dissimilarity", ylab = "Ranges") 
   }, width = 1000, height = 800)
 
   output$guildAnalysis <-   renderPlot ( {
-    
-    if(is.null(input$zipfile)) return(NULL)
-    
-      processEBirdFiles(input$zipfile, species, forestmap, input$forestDivision, input$startdate, input$enddate) %>%
+      ebd_proc() %>% 
       genGuildAnalysis () %>%
       ggplot(aes(x = Range, y = Percentage, fill=Guild)) +
         geom_bar(stat='identity', size = 10, show.legend = TRUE)
   }, width = 1000, height = 800)
   
-  
+output$surveymaps <-   renderPlot ( {
+  req(input$speciesname)
+  surveymaps(species = as.character(species[species$English.India == input$speciesname,]$Scientific.Name),
+             data = ebd_proc(), 
+             tempmap = forestmap, 
+             filter = input$forestDivision, 
+             dataformat = "PROCESSED DATA", 
+             gridsize = as.numeric(input$gridsize), 
+             smooth = input$smooth, 
+             h = 0.1, 
+             cutoff = as.numeric(input$cutoff), 
+             showempty = input$empty)  
+}, width = 500, height = 400)
+
 # Writing to a word document
   output$downloadData <- downloadHandler(
-    
+
     filename = function() { paste('Report_', input$forestDivision,
                                   Sys.Date(),'_',
                                   '.docx', sep='') },
     
-
     content = function(file) {
-        ebd <- processEBirdFiles(input$zipfile, species, forestmap, input$forestDivision, input$startdate, input$enddate)
-        doc <- docx() %>%
+        ebd <- ebd_proc()
+        doc <- read_docx() %>%
         createWordDocument(paste ('Birds of', input$forestDivision))  %>%
         createTableinDoc (  cbind (generateSummary(ebd), generateOverallSummary(ebd, paste(input$forestDivision,' Division'))),                            
                             paste('Summary of Birds of', input$forestDivision)) %>%
@@ -140,29 +151,33 @@ shinyServer <- function(input, output) {
                             generateThreatenedDensity(), paste('Threatened Birds of', input$forestDivision))    %>%  
         createTableinDoc (  ebd %>%
                             generateBirdDensity() %>% 
-                            generateGroupSummaries("WG"), paste('Endemic Birds of', input$forestDivision))    %>%  
-        createBarPlotinDoc (ebd %>%
-                            genCommunityData() %>% 
-                            genShannonDiversity(), paste('Bird Diversity Index for', input$forestDivision))    %>%  
-        createPlotinDoc (   ebd %>% 
-                            genCommunityData() %>% 
-                            genClusterAnalaysis(), paste('Cluster Analysis for', input$forestDivision))     %>% 
+                            generateGroupSummaries("WG"), paste('Endemic Birds of', input$forestDivision))      %>% 
+#        createBarPlotinDoc (ebd %>%
+#                              genCommunityData() %>% 
+#                              genShannonDiversity(), paste('Bird Diversity Index for', input$forestDivision))   %>%    
         createStackedBarPlotinDoc (ebd %>% 
-                            genGuildAnalysis(), paste('Guild Analysis for', input$forestDivision))     
-          
+                                       genGuildAnalysis(), paste('Guild Analysis for', input$forestDivision))     
+        
+        if(length(unique(ebd$RANGE)) > 1)
+        {   # If there is only a single range, then these does not make sense 
+#            doc <- doc %>%   
+#            createPlotinDoc (   ebd %>% 
+#                            genCommunityData() %>% 
+#                            genClusterAnalaysis(), paste('Cluster Analysis for', input$forestDivision))    
+        }
+         
         chartdatasplit <-   ebd %>% 
         generateIndicatorSpecies(input$indicaterspeciesperrange) 
-        
+
         for (x in names(chartdatasplit)) { ##go through all individually stored variable data frames in chartdatasplit list
           tabledata <- chartdatasplit[[x]]
           createTableinDoc(doc, tabledata, paste ("Encounter Rates of ",x))
         }
-        
-        writeDoc (doc, file)
+        print(doc, target = file )
     }
   )
 
-
+  
 # Multiple tables in one tab using HTML. Useful but formatting not yet perfect
   
   output$tables_common_species <- renderUI({
@@ -182,11 +197,11 @@ shinyServer <- function(input, output) {
     }
     
     
-    out <- processEBirdFiles(input$zipfile, species, forestmap, input$forestDivision, input$startdate, input$enddate) %>% 
-      generateBirdDensity() %>% 
-      generateCommonSpecies() %>%
-      tableize %>%
-      unlist
+    out <-  ebd_proc() %>%
+            generateBirdDensity() %>% 
+            generateCommonSpecies() %>%
+            tableize %>%
+            unlist
     return(div(HTML(out),class ="shiny-html-output"))
   })
 
@@ -206,11 +221,38 @@ shinyServer <- function(input, output) {
       return(lapply(tables,paste))    
     }
 
-    out <- processEBirdFiles(input$zipfile, species, forestmap, input$forestDivision, input$startdate, input$enddate) %>% 
+    out <- ebd_proc() %>%
       generateIndicatorSpecies(input$indicaterspeciesperrange) %>%
       tableize %>%
       unlist
     
     return(div(HTML(out),class ="shiny-html-output"))
   })
+  
+  # Writing to a zip file with all maps 
+  output$downloadMaps <- downloadHandler(
+    filename = function() { paste('Maps_', input$forestDivision,
+                                  Sys.Date(),'_',
+                                  '.zip', sep='') },
+    content = function(file) {
+        ebd <-  ebd_proc()
+        saveRDS(ebd, "temp.RDS")
+        ebd <- readRDS("temp.RDS")
+        freqdata <- generateOverallBirdDensity(ebd) 
+        dir <- "maps" 
+        dir.create(dir)
+        genMaps(ebd, freqdata, forestmap,
+                input$forestDivision,
+                as.numeric(input$gridsize),
+                input$smooth,
+                as.numeric(input$cutoff),
+                input$empty,
+                noofspecies = as.numeric (input$noofspecies), 
+                folder = dir, 
+                extension = '.jpg')   
+        
+        zip(file, files = dir)
+        unlink(dir, TRUE)
+    }
+  )    
 } 

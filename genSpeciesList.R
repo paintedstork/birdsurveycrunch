@@ -64,7 +64,7 @@ return (ebd_range_lists)
 # Test Code 
 testHarness_generateSpeciesList <- function () {
   unzip('..\\data\\ebird_1489816770850.zip')
-  ebd     <- read.csv('MyEbirdData.csv', header = TRUE, sep = ",") 
+  ebd     <- read.csv('MyEBirdData.csv', header = TRUE, sep = ",") 
   species <- read.csv('Species.csv', header = TRUE, sep = ",") 
   
   # Obtain details of birds by joining with species file

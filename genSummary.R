@@ -58,6 +58,7 @@ generateSummary <- function(ebd) {
   rangesummary <-   as.data.frame (ebd_lists_per_range$Range)
   colnames(rangesummary) <- c("Range")
   
+  
   rangesummary <-   join (rangesummary, as.data.frame(ebd_lists_per_range), type ='left', by ='Range') 
   rangesummary <-   join (rangesummary, as.data.frame(ebd_complete_lists_per_range), type ='left', by ='Range')
   rangesummary <-   join (rangesummary, as.data.frame(ebd_effort_per_range), type ='left', by ='Range')
@@ -65,19 +66,24 @@ generateSummary <- function(ebd) {
   rangesummary <-   join (rangesummary, as.data.frame(ebd_iucn_species_per_range), type ='left', by ='Range')
   rangesummary <-   join (rangesummary, as.data.frame(ebd_wg_species_per_range), type ='left', by ='Range')
 
+
   rangesummary [is.na(rangesummary)] <- 0
   rangesummary <- as.data.frame(t(rangesummary))
 
   # Next three lines convert the first row as column names  
   names(rangesummary) <- as.matrix(rangesummary[1, ])
+
+  # Patch - Unclear whats wrong
+  write.csv (rangesummary, "rst_c1.csv")
+  rangesummary <- read.csv("rst_c1.csv")
+  
   rangesummary <- rangesummary[-1, ]
   rangesummary[] <- lapply(rangesummary, function(x) type.convert(as.character(x)))
-  
+
   # Next two lines moves the row names as first column with a name for the column
   setDT(rangesummary, keep.rownames = TRUE)[]
   colnames(rangesummary)[1] <- "Region===>"
-  
-  print (rangesummary)
+
   return (rangesummary)
 }
 
@@ -112,14 +118,14 @@ generateOverallSummary <- function(ebd, division) {
                                     nrow(ebd_species[ebd_species$WG == 'X',])))
   
   colnames(divisionsummary)  <- c(division)
-  
+  print(nrow(divisionsummary))
   return (divisionsummary)
 }
 
 # Test Code 
 testHarness_generateSummary <- function () {
   unzip('..\\data\\ebird_1489816770850.zip')
-  ebd     <- read.csv('MyEbirdData.csv', header = TRUE, sep = ",") 
+  ebd     <- read.csv('MyEBirdData.csv', header = TRUE, sep = ",") 
   species <- read.csv('Species.csv', header = TRUE, sep = ",") 
   
   # Obtain details of birds by joining with species file
