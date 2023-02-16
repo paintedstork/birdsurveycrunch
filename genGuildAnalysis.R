@@ -1,5 +1,4 @@
 library(vegan)
-library(plyr)
 library (ggplot2)
 
 #################################################################
@@ -58,7 +57,7 @@ testHarness_genGuildAnalysis <- function () {
   species <- read.csv('Species.csv', header = TRUE, sep = ",") 
   
   # Obtain details of birds by joining with species file
-  ebd <- join (ebd, species, by = 'Scientific.Name')
+  ebd <- left_join (ebd, species, by = 'Scientific.Name')
   ebd$RANGE <- 'Vazhachal'
   ebd$RANGE [100:500] <- 'Sholayar'
   ebd$RANGE [500:1000] <- 'Charpa'

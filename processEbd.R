@@ -1,4 +1,3 @@
-library (plyr)
 library (dplyr)
 library (rgdal)
 library (sp)
@@ -52,19 +51,33 @@ readEBirdFiles <- function (inputEbdFile, startDate, endDate) {
   
   print(inputEbdFile$name)
 
-  if( tools::file_ext(inputEbdFile$name) == 'csv') ebd <- read.csv(inputEbdFile$datapath)
-  
+  if( tools::file_ext(inputEbdFile$name) == 'csv') 
+  {
+      ebd <- read.csv(inputEbdFile$datapath)
+      print(nrow(ebd))
+      
+      #Filter on date selected. Format is different between the two downloads
+      if(as.Date(startDate) < as.Date(endDate))
+      {
+        ebd <- ebd [which(as.Date(ebd$Date,"%Y-%m-%d") >= as.Date(startDate)), ]
+        ebd <- ebd [which(as.Date(ebd$Date,"%Y-%m-%d") <= as.Date(endDate)), ]
+        print(nrow(ebd))
+      }
+      print(nrow(ebd))
+  }
+
   if( tools::file_ext(inputEbdFile$name) == 'zip') {
     if ( any ('MyEBirdData.csv'== unzip(inputEbdFile$datapath, list=TRUE)$Name))
     {
+      print("Unzipping file")
       ebd <- read.csv(unz(inputEbdFile$datapath,'MyEBirdData.csv'))
       print(nrow(ebd))
       
       #Filter on date selected. Format is different between the two downloads
       if(as.Date(startDate) < as.Date(endDate))
       {
-        ebd <- ebd [which(as.Date(ebd$Date,"%m-%d-%Y") >= as.Date(startDate)), ]
-        ebd <- ebd [which(as.Date(ebd$Date,"%m-%d-%Y") <= as.Date(endDate)), ]
+        ebd <- ebd [which(as.Date(ebd$Date,"%Y-%m-%d") >= as.Date(startDate)), ]
+        ebd <- ebd [which(as.Date(ebd$Date,"%Y-%m-%d") <= as.Date(endDate)), ]
         print(nrow(ebd))
       }
       print(nrow(ebd))
@@ -90,6 +103,7 @@ readEBirdFiles <- function (inputEbdFile, startDate, endDate) {
       }
     }
   }
+  print(paste("Final number of observations ", nrow(ebd)))
   
 
   # Strip unwanted columns from eBird records
@@ -128,7 +142,7 @@ processEBirdFiles <- function (inputEbdFile, species, forestmap, forestDivision,
   }
   
   # Obtain details of birds by joining with species file
-  ebd <- join (ebd, species, type = 'inner', by = 'Scientific.Name')
+  ebd <- inner_join (ebd, species, by = 'Scientific.Name')
 
   sp::coordinates(ebd) <- ~Longitude+Latitude
   # Map the CRS

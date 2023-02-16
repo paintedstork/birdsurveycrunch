@@ -1,4 +1,3 @@
-library (plyr)
 library (dplyr)
 library(reshape2)
 
@@ -75,7 +74,7 @@ return (ebd_density_per_range)
 }
 
 generateOverallBirdDensity <- function(ebd) {
-  
+  if(ebd == 0) { return (NULL) }
   print(nrow(ebd))
   if (nrow(ebd) == 0)  { return (NULL) }
   
@@ -97,6 +96,7 @@ generateOverallBirdDensity <- function(ebd) {
   #Remove subspecies/issf
   ebd_all   <- ebd_all[!duplicated(ebd_all[c("Genus.Name","Species.Name", "Submission.ID")]),]
   
+  print(names(ebd_all))
   #Calculate the encounters per species per range
   ebd_density_division <- dcast(ebd_all, Taxonomic.Order + 
                                          English.India + 
@@ -145,7 +145,7 @@ testHarness_generateBirdDensity <- function () {
   species <- read.csv('Speciesv2.csv', header = TRUE, sep = ",") 
   
   # Obtain details of birds by joining with species file
-  ebd <- join (ebd, species, by = 'Scientific.Name')
+  ebd <- left_join (ebd, species, by = 'Scientific.Name')
   ebd$RANGE <- 'Vazhachal'
   ebd$RANGE [100:200] <- 'Sholayar'
   ebd$RANGE [200:500] <- 'Charpa'

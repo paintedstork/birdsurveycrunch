@@ -1,6 +1,6 @@
 library(shiny)
 library(xtable)
-library(plotly)
+
 library(ggplot2)
 
 source("global.R")
@@ -174,6 +174,7 @@ output$surveymaps <-   renderPlot ( {
           createTableinDoc(doc, tabledata, paste ("Encounter Rates of ",x))
         }
         print(doc, target = file )
+        print(file)
     }
   )
 
@@ -247,11 +248,12 @@ output$surveymaps <-   renderPlot ( {
                 input$smooth,
                 as.numeric(input$cutoff),
                 input$empty,
-                noofspecies = as.numeric (input$noofspecies), 
+                noofspecies = as.numeric(input$noofspecies), 
                 folder = dir, 
                 extension = '.jpg')   
-        
-        zip(file, files = dir)
+        print(dir)
+        print(zip(file, files = dir))
+        print(file)
         unlink(dir, TRUE)
     }
   )    

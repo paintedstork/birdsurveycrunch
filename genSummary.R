@@ -1,4 +1,3 @@
-library (plyr)
 library (dplyr)
 library(reshape2)
 library(data.table)
@@ -59,12 +58,12 @@ generateSummary <- function(ebd) {
   colnames(rangesummary) <- c("Range")
   
   
-  rangesummary <-   join (rangesummary, as.data.frame(ebd_lists_per_range), type ='left', by ='Range') 
-  rangesummary <-   join (rangesummary, as.data.frame(ebd_complete_lists_per_range), type ='left', by ='Range')
-  rangesummary <-   join (rangesummary, as.data.frame(ebd_effort_per_range), type ='left', by ='Range')
-  rangesummary <-   join (rangesummary, as.data.frame(ebd_species_per_range), type ='left', by ='Range')
-  rangesummary <-   join (rangesummary, as.data.frame(ebd_iucn_species_per_range), type ='left', by ='Range')
-  rangesummary <-   join (rangesummary, as.data.frame(ebd_wg_species_per_range), type ='left', by ='Range')
+  rangesummary <-   left_join (rangesummary, as.data.frame(ebd_lists_per_range), type ='left', by ='Range') 
+  rangesummary <-   left_join (rangesummary, as.data.frame(ebd_complete_lists_per_range), type ='left', by ='Range')
+  rangesummary <-   left_join (rangesummary, as.data.frame(ebd_effort_per_range), type ='left', by ='Range')
+  rangesummary <-   left_join (rangesummary, as.data.frame(ebd_species_per_range), type ='left', by ='Range')
+  rangesummary <-   left_join (rangesummary, as.data.frame(ebd_iucn_species_per_range), type ='left', by ='Range')
+  rangesummary <-   left_join (rangesummary, as.data.frame(ebd_wg_species_per_range), type ='left', by ='Range')
 
 
   rangesummary [is.na(rangesummary)] <- 0

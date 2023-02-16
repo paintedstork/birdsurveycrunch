@@ -1,5 +1,4 @@
 library(shiny)
-library(plotly)
 
 shinyUI <- fluidPage(
 
@@ -11,17 +10,17 @@ shinyUI <- fluidPage(
     fileInput('zipfile', h3('Upload',accept = c('.zip','.csv'))),
 
 
-    helpText(h4("Select the forest division for which you would like to analyse data")),
+    helpText(h4("Select the forest division for which you would like to analyse data. Don't find, contact author")),
     selectInput('forestDivision', 'Forest Division', choices = divisions, selected = 'Periyar Tiger Reserve'),
     
     # value is always yyyy-mm-dd, even if the display format is different
     # Start date for the survey
     helpText(h4("Select the start and end dates of the survey")),
-    dateInput("startdate", "Start Date of Survey", value = "2019-01-01", format = "dd/mm/yy"),
+    dateInput("startdate", "Start Date of Survey", value = "2023-01-01", format = "dd/mm/yy"),
     
     # value is always yyyy-mm-dd, even if the display format is different
     # End date for the survey
-    dateInput("enddate", "End Date of Survey", value = "2019-04-04", format = "dd/mm/yy"), 
+    dateInput("enddate", "End Date of Survey", value = "2023-04-30", format = "dd/mm/yy"), 
 
     helpText(h4("Check this box if you would like to generate indicator species summary per range")),
     checkboxInput("indicaterspeciesperrange", label = "Generete per Range", value = FALSE),
@@ -67,9 +66,9 @@ shinyUI <- fluidPage(
                br(), h1("About Bird Survey Report Generator"), 
                br(), p("Bird surveys are conducted in various forest areas with the help of bird-watchers."), 
                br(), p("Bird-watchers use eBird enter their observations as multiple lists."), 
-               br(), p("This app helps in analysing the eBird data and create summaries for a bird survey report:"),
-               br(), p("Added configuration for Maps: 03 March 2019:")
-      )
+               br(), p("This app helps din analysing the eBird data and create summaries for a bird survey report:"),
+               br(), p("Added google drive support for maps and species list and hence additional forest divisions can be added: 14 March 2023:")
+       )
     )
   )
 )

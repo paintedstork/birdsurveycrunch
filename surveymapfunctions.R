@@ -76,6 +76,12 @@ surveymaps = function(species,
                       cutoff = 2, 
                       showempty = T)
 {
+# If data has not been passed, read the data from the file supplied.  
+  
+  if(is.null(data))
+  {
+    return (0);
+  }
   print( paste (species,
                 nrow(data), 
                 filter,
@@ -86,10 +92,9 @@ surveymaps = function(species,
                 h,
                 cutoff,
                 showempty
-                ))
-  
-# If data has not been passed, read the data from the file supplied.  
-  if(is.null(data))
+  ))
+
+  if(nrow(data) == 0)
   {
     return (0);
   }

@@ -75,7 +75,6 @@ genSpecAccumPerRange  <- function (ebd_diversity)
   }
 }
 
-#library(vegan)
 #data(BCI) 
 #df <- lapply(c(1,21,41,61,81),function(i)specaccum(BCI[,seq(i,i+19)], method="random"))
 #plot(df[[1]])

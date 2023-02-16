@@ -21,11 +21,10 @@ genMaps <- function(ebd = NULL,
                      extension = '.jpg')
 {
    print(names(frequencyData))
-# Sort descending by density and pick the required common species   
+   print(nrow(frequencyData))
+   # Sort descending by density and pick the required common species   
    commonspecies <- frequencyData %>% setorder (-Density) %>% head ( min (noofspecies, nrow(frequencyData)))  
-   
-   print(nrow(commonspecies))
-   
+   print(paste("Generating maps for ", nrow(commonspecies),"species"))
    for (species in commonspecies$'Scientific Name')
    {
       print(paste("Generating maps for species",species))

@@ -1,5 +1,4 @@
 library(vegan)
-library(plyr)
 
 #################################################################
 #           Generate Community Data set from ebd Data           #
@@ -60,7 +59,7 @@ testHarness_genShannonDiversity <- function () {
   species <- read.csv('Species.csv', header = TRUE, sep = ",") 
   
   # Obtain details of birds by joining with species file
-  ebd <- join (ebd, species, by = 'Scientific.Name')
+  ebd <- left_join (ebd, species, by = 'Scientific.Name')
   ebd$RANGE <- 'Vazhachal'
   ebd$RANGE [100:200] <- 'Sholayar'
   ebd$RANGE [200:500] <- 'Charpa'
