@@ -1,5 +1,5 @@
 library (dplyr)
-library(reshape2)
+#library(reshape2)
 source ("genBirdDensity.R")
 
 generateCommonSpecies <- function(ebd_density, numeral_col=11) {
@@ -17,7 +17,7 @@ generateCommonSpecies <- function(ebd_density, numeral_col=11) {
   for (x in 2:ncol(ebd_density))
   {
     ebd_range_density       <- cbind (as.data.frame (ebd_density[,1]), as.data.frame (ebd_density [,x]))
-    ebd_range_density       <- head (ebd_range_density [ order (-ebd_range_density [2]),], 10)
+    ebd_range_density       <- head (ebd_range_density [ order (-ebd_range_density [[2]]),], 10)
     ebd_range_density$Range <- colnames(ebd_density)[x]
     ebd_density_over_ranges <- rbind (ebd_density_over_ranges, ebd_range_density)
   }

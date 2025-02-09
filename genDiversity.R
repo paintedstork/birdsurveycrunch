@@ -19,7 +19,7 @@ genCommunityData <- function(ebd) {
   #Remove slashes
   ebd_all   <- ebd_all[ebd_all$Category != 'slash',]
   
-  ebd_diversity <- dcast(ebd_all, Submission.ID + RANGE  ~ English.India, value.var = "Submission.ID", fun.aggregate = length ) 
+  ebd_diversity <- reshape2::dcast(ebd_all, Submission.ID + RANGE  ~ English.India, value.var = "Submission.ID", fun.aggregate = length ) 
   ebd_diversity <- cbind (ebd_diversity[1:2], ebd_diversity[4:ncol(ebd_diversity)]) 
   
   return (ebd_diversity)
@@ -35,7 +35,7 @@ genShannonDiversity  <- function (ebd_diversity)
   
   colnames (diversity) <- c ("Diversity")
  
-  print(diversity)  
+#  print(diversity)  
   return (diversity)
 }
 
@@ -45,6 +45,7 @@ genClusterAnalaysis  <- function (ebd_diversity)
   agg <- aggregate(. ~ RANGE, data=ebd_diversity[2:ncol(ebd_diversity)], sum)
 
   vare.dist <- vegdist(agg[2:ncol(agg)])
+  
   clust.res<-hclust(vare.dist,method="average")
   clust.res$labels <- t(agg[1])
   

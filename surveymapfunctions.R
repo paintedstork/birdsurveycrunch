@@ -1,13 +1,16 @@
 library(tidyverse)
 library(ggfortify)
-library(sp)
-library(rgeos)
-library(rgdal)
+#library(sp)
+#Fix 01092024
+#library(rgeos)
+#library(rgdal)
 library(raster)
 library(mltools)
 library(scales)
-library(maptools)
+#Fix 01092024
+#library(maptools)
 library(mapproj)
+library(sf)
 
 ## transform data makes different types of data uniform
 
@@ -106,11 +109,12 @@ surveymaps = function(species,
   
   ## change the next 2 statements as required
   tmap = tempmap[tempmap@data$Division %in% filter,]
-  tmapf = fortify(tmap, region = c("Range"))
-
+  #tmapf = fortify(tmap, region = c("Range"))
+  tmapf = tmap %>% st_as_sf()
   
   map = ggplot() +
-    geom_polygon(data = tmapf, aes(x=long, y=lat, group=group), colour = 'black', fill = "white")+  
+    #geom_polygon(data = tmapf, aes(x=long, y=lat, group=group), colour = 'black', fill = "white")+
+    geom_sf(data = tmapf, fill = "white", color = "black") +
     scale_x_continuous(expand = c(0,0)) +
     scale_y_continuous(expand = c(0,0)) +
     theme_bw()+
@@ -182,7 +186,8 @@ surveymaps = function(species,
     filter(lists >= cutoff) %>%
     distinct(grid,lists)
   
-  fortified = fortify(gridmap, region = c("id"))
+  #fortified = fortify(gridmap, region = c("id"))
+  fortified = gridmap %>% st_as_sf()
   forttot = fortify(tmap)
   mnlo = min(forttot$long)
   mnla = min(forttot$lat)
@@ -269,8 +274,12 @@ surveymaps = function(species,
   
   out = map +
     {if(smooth)stat_density2d(data = data1, aes(x = LONGITUDE, y = LATITUDE, fill = stat(level)), h = h, n = 100, geom = "polygon")} +
-    {if(!isTRUE(smooth))geom_polygon(data = plotdf, aes(x = long, y = lat, group = group, fill = freq1))} +
-    {if(switch & showempty)geom_polygon(data = emptydf, aes(x = long, y = lat, group = group, col = cl), fill = "grey30")} +
+    {if(!isTRUE(smooth))
+      geom_sf(data = plotdf, aes(fill = freq1), color = "black")} +
+      #geom_polygon(data = plotdf, aes(x = long, y = lat, group = group, fill = freq1))} +
+    {if(switch & showempty)
+      geom_sf(data = emptydf, aes(color = cl), fill = "grey30")} +
+      #geom_polygon(data = emptydf, aes(x = long, y = lat, group = group, col = cl), fill = "grey30")} +
     #geom_point(data = data, aes(x = LONGITUDE, y = LATITUDE)) +
     geom_path(data = fortify(gridmap), aes(x = long, y = lat, group = group), col = "black") +
     geom_polygon(data = mask, aes(x = long, y = lat, group = group), col = 'white', fill = 'white') +

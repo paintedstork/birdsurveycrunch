@@ -12,7 +12,7 @@ genGuildAnalysis <- function (ebd)
   print(nrow(ebd))
   
   # Calculate guild encounters
-  guild <- dcast (ebd, Feeding.Guild ~ RANGE, value.var = "Submission.ID", fun.aggregate = length)
+  guild <- reshape2::dcast (ebd, Feeding.Guild ~ RANGE, value.var = "Submission.ID", fun.aggregate = length)
 
   # Calculate guild values in percentages
   if (ncol(guild) > 2 )
@@ -43,7 +43,7 @@ genGuildAnalysis <- function (ebd)
   guild <- guild[t(rows_to_keep),]
   
   # Convert it to long table for ggplot
-  guild <- melt (guild) 
+  guild <- reshape2::melt (guild) 
   
   # name columns properly
   colnames (guild) <- c("Guild", "Range", "Percentage")

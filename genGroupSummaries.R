@@ -1,15 +1,17 @@
 library (dplyr)
-library(reshape2)
+#library(reshape2)
 source("genBirdDensity.R")
 
 generateGroupSummaries <- function(ebd_density, col_filter, numeral_col=11) {
-  
+# print(paste("generateGroupSummaries",nrow(ebd_density)))  
   ebd_density  <- ebd_density[ebd_density[,col_filter] != "",]
+# print(paste("generateGroupSummaries",nrow(ebd_density)))  
   
-  if (nrow(ebd_density) == 0)  { return (NULL) }
+  if (nrow(ebd_density) == 0)  { return (ebd_density) }
 
   # First numeral_col columns are metadata and not values. 
   ebd_density <- cbind (ebd_density["English Name"], ebd_density [numeral_col:ncol(ebd_density)])
+# print(paste("generateGroupSummaries",nrow(ebd_density)))  
   
   colnames(ebd_density)[1] <- c("Species")
   return (ebd_density)
@@ -17,7 +19,7 @@ generateGroupSummaries <- function(ebd_density, col_filter, numeral_col=11) {
 
 generateIndicatorSpecies <- function (ebd, range_level_summary=FALSE) {
   
-  print(range_level_summary)
+#  print(range_level_summary)
 
   if (range_level_summary) {
     ebd_density <- generateBirdDensity(ebd)

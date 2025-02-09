@@ -1,6 +1,6 @@
 library (dplyr)
-library (rgdal)
-library (sp)
+library(sf)
+#library (sp)
 library (tools)
 library (sqldf)
 
@@ -143,15 +143,16 @@ processEBirdFiles <- function (inputEbdFile, species, forestmap, forestDivision,
   
   # Obtain details of birds by joining with species file
   ebd <- inner_join (ebd, species, by = 'Scientific.Name')
+  ebd <- st_as_sf(ebd, coords = c("Longitude", "Latitude"), crs = st_crs(forestmap))
 
-  sp::coordinates(ebd) <- ~Longitude+Latitude
+#  sp::coordinates(ebd) <- ~Longitude+Latitude
   # Map the CRS
-  sp::proj4string(ebd) <- sp::proj4string(forestmap)
+#  sp::proj4string(ebd) <- sp::proj4string(forestmap)
   
 
   ebd_with_range_and_division <- NULL
   
-  for (rangeindex in 1:nrow(forestmap@data))
+  for (rangeindex in 1:nrow(forestmap))
   {
     # Filter lists according to set filter polygons 
     range_selected  <- forestmap[rangeindex, ]
@@ -173,6 +174,8 @@ processEBirdFiles <- function (inputEbdFile, species, forestmap, forestDivision,
       
       if(!is.null(ebd_with_range_and_division))
       {
+        print(class(ebd_with_range_and_division))
+        print(class(rgl_ebd))
         ebd_with_range_and_division <- rbind (ebd_with_range_and_division, rgl_ebd)
       }
       else
@@ -190,19 +193,35 @@ processEBirdFiles <- function (inputEbdFile, species, forestmap, forestDivision,
   print("Processing")  
   if(pickalllists)
   {# Remaining lists should be processed with this condition 
-     ebd_selected <- ebd_with_range_and_division
-     ebd_selected$DIVISION <- NULL
-     ebd_selected$RANGE <- NULL
+     print ("Picking all lists")
+    if (!is.null(ebd_with_range_and_division) && nrow(ebd_with_range_and_division) > 0)
+    {
+       ebd_selected <- ebd_with_range_and_division
+       ebd_selected$DIVISION <- NULL
+       ebd_selected$RANGE <- NULL
      
-     ebd_selected <- sqldf ("SELECT * FROM ebd EXCEPT SELECT * FROM ebd_selected")
-     
+       print(class(ebd_selected))
+       print(class(ebd))
+       print(names(ebd_selected))
+       print(names(ebd))
+       #ebd_selected <- sqldf ("SELECT * FROM ebd EXCEPT SELECT * FROM ebd_selected")
+       ebd_selected <- anti_join(ebd, ebd_selected)
+       print("SQL query done")
+    }
+    else
+    {
+       ebd_selected <- ebd
+    }
      print(nrow(ebd_selected))
      # If there are any lists from Outskirts, then add them
-     if(nrow (ebd_selected))
+     if(nrow (ebd_selected) > 0)
      {
         ebd_selected$RANGE <- "Outskirts"
         ebd_selected$DIVISION <- forestDivision
      
+        print(class(ebd_with_range_and_division))
+        print(class(ebd_selected))
+        
         ebd_with_range_and_division <- rbind (ebd_with_range_and_division, ebd_selected)
         ebd_with_range_and_division <- ebd_with_range_and_division [which (ebd_with_range_and_division$DIVISION == forestDivision), ]
      }
@@ -243,7 +262,9 @@ inputEbdFile$name <- 'ebd_IN-KL-TS_relFeb-2017.zip'
 species <- read.csv('Species.csv', header = TRUE, sep = ",") 
 
 unzip('keralaforest.zip')
-forestmap <- rgdal::readOGR('keralaforest.shp', 'keralaforest')
+#forestmap <- rgdal::readOGR('keralaforest.shp', 'keralaforest')
+forestmap <- st_read("keralaforest.shp")
+
 forestDivision <- 'Vazhachal'
 startDate <- '2015-01-15'
 endDate <- '2017-03-01'

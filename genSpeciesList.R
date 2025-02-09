@@ -1,5 +1,5 @@
 library (dplyr)
-library(reshape2)
+#library(reshape2)
 
 #################################################################
 #           Generate Species List from ebd Data                 #
@@ -34,7 +34,7 @@ if(length(unique(ebd_species$RANGE)) > 1)
   ebd_species$No  <- 1
   
   # Create a pivot with AllSpecies vs Forest Ranges for getting the Range wise checklist
-  ebd_range_lists <- dcast(ebd_species, Taxonomic.Order + English.India + Scientific.Name ~ RANGE, value.var = "No", fun.aggregate = {function(x) if(length(x)>=1) 1 else 0} )
+  ebd_range_lists <- reshape2::dcast(ebd_species, Taxonomic.Order + English.India + Scientific.Name ~ RANGE, value.var = "No", fun.aggregate = {function(x) if(length(x)>=1) 1 else 0} )
   
   # Make it "X" or " "
   ebd_range_lists[ebd_range_lists == 0] <- ''

@@ -1,5 +1,5 @@
 library (dplyr)
-library(reshape2)
+#library(reshape2)
 
 #################################################################
 #           Generate Bird Density from ebd Data                 #
@@ -18,7 +18,7 @@ ebd_lists           <- ebd[!duplicated(ebd[c("Submission.ID")]), ]
 
 ebd_complete_lists  <- ebd_lists[ebd_lists$All.Obs.Reported == 1,]
 
-ebd_complete_lists_per_range<- dcast(ebd_complete_lists, RANGE ~ ., value.var = "Submission.ID", fun.aggregate = length )
+ebd_complete_lists_per_range<- reshape2::dcast(ebd_complete_lists, RANGE ~ ., value.var = "Submission.ID", fun.aggregate = length )
 colnames (ebd_complete_lists_per_range) <- c ("Range", "No of Complete Lists")
 
 ebd_all <- ebd  
@@ -36,7 +36,7 @@ ebd_all   <- ebd_all[ebd_all$Category != 'slash',]
 ebd_all   <- ebd_all[!duplicated(ebd_all[c("Genus.Name","Species.Name", "Submission.ID")]),]
 
 #Calculate the encounters per species per range
-ebd_density_per_range <- dcast(ebd_all, Taxonomic.Order + 
+ebd_density_per_range <- reshape2::dcast(ebd_all, Taxonomic.Order + 
                                         English.India + 
                                         Scientific.Name + 
                                         IUCN + 
@@ -74,7 +74,8 @@ return (ebd_density_per_range)
 }
 
 generateOverallBirdDensity <- function(ebd) {
-  if(ebd == 0) { return (NULL) }
+#  browser()
+  if(is.null(ebd)) { return (NULL) }
   print(nrow(ebd))
   if (nrow(ebd) == 0)  { return (NULL) }
   
@@ -98,7 +99,7 @@ generateOverallBirdDensity <- function(ebd) {
   
   print(names(ebd_all))
   #Calculate the encounters per species per range
-  ebd_density_division <- dcast(ebd_all, Taxonomic.Order + 
+  ebd_density_division <- reshape2::dcast(ebd_all, Taxonomic.Order + 
                                          English.India + 
                                          Scientific.Name + 
                                          IUCN + 
@@ -116,11 +117,6 @@ generateOverallBirdDensity <- function(ebd) {
   ebd_density_division <- cbind (ebd_density_division [1:10], 
                                   t( round (100 * t(ebd_density_division[11]) / nrow(ebd_complete_lists), 2)))
 
-  ebd_density_division  <- ebd_density_division [ order (-ebd_density_division [11]),]
-  
-  # Add a Serial Number
-  ebd_density_division$SlNo <- seq.int(nrow(ebd_density_division))
-
   colnames (ebd_density_division) <- c ("Taxonomic.Order", 
                                         "English Name" , 
                                         "Scientific Name", 
@@ -131,9 +127,13 @@ generateOverallBirdDensity <- function(ebd) {
                                         "Primary Hole Nesters",
                                         "Woodland Understorey Birds",
                                         "Parasitic Cuckoos",
-                                        "Density", 
-                                        "SlNo")
+                                        "Density")
   
+  ebd_density_division  <- ebd_density_division [ order (-ebd_density_division$Density),]
+  
+  # Add a Serial Number
+  ebd_density_division$SlNo <- seq.int(nrow(ebd_density_division))
+
   return (ebd_density_division )
 }
 
@@ -146,15 +146,15 @@ testHarness_generateBirdDensity <- function () {
   
   # Obtain details of birds by joining with species file
   ebd <- left_join (ebd, species, by = 'Scientific.Name')
-  ebd$RANGE <- 'Vazhachal'
+  ebd$RANGE <- 'Nemmara'
   ebd$RANGE [100:200] <- 'Sholayar'
-  ebd$RANGE [200:500] <- 'Charpa'
-  ebd$RANGE [500:800] <- 'Kollathirumedu'
+  ebd$RANGE [200:300] <- 'Charpa'
+  ebd$RANGE [300:491] <- 'Kollathirumedu'
   
   output <- generateBirdDensity(ebd) 
   write.csv(output, 'testout.csv')
 
-#  output <- generateOverallBirdDensity(ebd) 
+  output <- generateOverallBirdDensity(ebd) 
   write.csv(output, 'testout.csv')
   
   print (nrow(output))

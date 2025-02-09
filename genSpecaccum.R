@@ -9,11 +9,11 @@ library(vegan)
 genSpecAccumPerRange  <- function (ebd_diversity)
 {
   
-  ebd_diversity <- dcast(ebd_all, RANGE  ~ English.India, value.var = "Submission.ID", fun.aggregate = length ) 
+  ebd_diversity <- reshape2::dcast(ebd_all, RANGE  ~ English.India, value.var = "Submission.ID", fun.aggregate = length ) 
   ebd_diversity <- cbind (ebd_diversity[1:2], ebd_diversity[4:ncol(ebd_diversity)])
   
   
-  ebd_diversity <- dcast(ebd_all, Submission.ID + RANGE   ~ English.India, value.var = "Submission.ID", fun.aggregate = length ) 
+  ebd_diversity <- reshape2::dcast(ebd_all, Submission.ID + RANGE   ~ English.India, value.var = "Submission.ID", fun.aggregate = length ) 
   
   
   plot(diversity(ebd_diversity[2:ncol(ebd_diversity)]), xlab="Ranges", ylab="Shannon Diversity", pch=18, cex=1.5, col="blue") # Shannon Diversity

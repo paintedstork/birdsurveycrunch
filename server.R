@@ -21,8 +21,16 @@ options(shiny.maxRequestSize=30*1024^2)
 
 shinyServer <- function(session, input, output) {
 
+  observeEvent(input$forestDivision, {
+    selected <- shapelist %>% filter (DivisionName == input$forestDivision)
+    forestmap <<- getShape (selected$Polygon, selected$Folder)
+    print(nrow(forestmap))
+  })
+  
   ebd_proc <- reactive ({
     req(input$zipfile)
+    req(forestmap)
+    print(nrow(forestmap))
     processEBirdFiles(input$zipfile, species, forestmap, input$forestDivision, input$startdate, input$enddate, input$pickalllists)
   })
   
@@ -134,7 +142,6 @@ output$surveymaps <-   renderPlot ( {
                             generateOverallBirdDensity () %>%
                             subset(select = c("SlNo", "English Name","Scientific Name", "IUCN", "WG", "Density")),  
                             paste('Density of Birds of', input$forestDivision))
-                            
         chartdatasplit <-   ebd %>% 
           generateBirdDensity() %>% 
           generateCommonSpecies()
@@ -148,20 +155,25 @@ output$surveymaps <-   renderPlot ( {
         doc <- doc %>%
         createTableinDoc (  ebd %>% 
                             generateBirdDensity() %>% 
-                            generateThreatenedDensity(), paste('Threatened Birds of', input$forestDivision))    %>%  
+                            generateThreatenedDensity(), paste('Threatened Birds of', input$forestDivision))    
+        
+          
+        doc <- doc %>%
         createTableinDoc (  ebd %>%
-                            generateBirdDensity() %>% 
-                            generateGroupSummaries("WG"), paste('Endemic Birds of', input$forestDivision))      %>% 
-#        createBarPlotinDoc (ebd %>%
-#                              genCommunityData() %>% 
-#                              genShannonDiversity(), paste('Bird Diversity Index for', input$forestDivision))   %>%    
+                        generateBirdDensity() %>% 
+                        generateGroupSummaries("WG"), paste('Endemic Birds of', input$forestDivision))       
+
+#        doc <- doc %>% createBarPlotinDoc (ebd %>%
+#                            genCommunityData() %>% 
+#                            genShannonDiversity(), paste('Bird Diversity Index for', input$forestDivision))       
+        doc <- doc %>%
         createStackedBarPlotinDoc (ebd %>% 
-                                       genGuildAnalysis(), paste('Guild Analysis for', input$forestDivision))     
+                                     genGuildAnalysis(), paste('Guild Analysis for', input$forestDivision))     
         
         if(length(unique(ebd$RANGE)) > 1)
         {   # If there is only a single range, then these does not make sense 
 #            doc <- doc %>%   
-#            createPlotinDoc (   ebd %>% 
+#            createDendPlotinDoc ( ebd %>% 
 #                            genCommunityData() %>% 
 #                            genClusterAnalaysis(), paste('Cluster Analysis for', input$forestDivision))    
         }
@@ -173,6 +185,7 @@ output$surveymaps <-   renderPlot ( {
           tabledata <- chartdatasplit[[x]]
           createTableinDoc(doc, tabledata, paste ("Encounter Rates of ",x))
         }
+        doc <- doc %>% body_end_section_landscape() 
         print(doc, target = file )
         print(file)
     }
@@ -237,8 +250,8 @@ output$surveymaps <-   renderPlot ( {
                                   '.zip', sep='') },
     content = function(file) {
         ebd <-  ebd_proc()
-        saveRDS(ebd, "temp.RDS")
-        ebd <- readRDS("temp.RDS")
+#        saveRDS(ebd, "temp.RDS")
+#        ebd <- readRDS("temp.RDS")
         freqdata <- generateOverallBirdDensity(ebd) 
         dir <- "maps" 
         dir.create(dir)
